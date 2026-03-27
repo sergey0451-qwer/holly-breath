@@ -120,3 +120,11 @@ export function processLyrics(lyrics, transposeSteps, isRich, baseKey = 'C') {
     return `[${chords.join(' ')}]`;
   });
 }
+
+export default class ChordEngine {
+  transposeChord = transposeChord;
+  parseNashvilleNumber = parseNashvilleNumber;
+  enrichChord = enrichChord;
+  processLyrics = processLyrics;
+}
+
