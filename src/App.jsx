@@ -75,10 +75,42 @@ const BottomNav = () => {
   );
 };
 
+class AppErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, errorMessage: '' };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, errorMessage: error.toString() };
+  }
+  componentDidCatch(error, info) {
+    console.error("ErrorBoundary caught:", error, info);
+  }
+  render() {
+    if (this.state.hasError || window.__FIREBASE_ERROR__) {
+      let errMsg = window.__FIREBASE_ERROR__ ? "Firebase Error: " + window.__FIREBASE_ERROR__ : this.state.errorMessage;
+      if (errMsg.includes("Missing") || errMsg.includes("API Key") || errMsg.includes("VITE_")) {
+        errMsg = "API Key Missing / " + errMsg;
+      }
+      return (
+        <div style={{ padding: '2rem', color: '#ff4d4f', background: '#0a0a0a', height: '100vh', fontFamily: 'monospace' }}>
+          <h2>🚨 Врата Потока: Сбой Системы</h2>
+          <h3>Критические Ошибки Окружения (Vercel Env Variables)</h3>
+          <pre style={{ whiteSpace: 'pre-wrap', marginTop: '1rem', color: '#ffaaa5', padding: '1rem', border: '1px solid #ff4d4f' }}>
+            {errMsg}
+          </pre>
+          <p style={{marginTop: '2rem', color: '#fff'}}>
+            <strong>Действие:</strong> Перейди в Vercel Dashboard -{">"} Settings -{">"} Environment Variables и добавь все ключи (VITE_FIREBASE_API_KEY, GOOGLE_GENERATIVE_AI_API_KEY и т.д.). Затем сделай Redeploy.
+          </p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   // GLOBAL STATE WITH PERSISTENCE
-  const [sessionTime, setSessionTime] = useState(() => Number(localStorage.getItem('hb_sessionTime')) || 0);
-  const [totalCycles, setTotalCycles] = useState(() => Number(localStorage.getItem('hb_totalCycles')) || 0);
   const [vocalRank, setVocalRank] = useState(() => localStorage.getItem('hb_vocalRank') || 'Apprentice');
 
   const [userId, setUserId] = useState(() => localStorage.getItem('hb_userId') || null);
@@ -108,18 +140,21 @@ export default function App() {
 
   if (!userId || !engine) {
     return (
-      <Router>
-        <Routes>
-          <Route path="/u/:id" element={<LinkLogin onSelect={handleSelectUser} />} />
-          <Route path="/*" element={<S0_ProfileSelect onSelect={handleSelectUser} />} />
-        </Routes>
-      </Router>
+      <AppErrorBoundary>
+        <Router>
+          <Routes>
+            <Route path="/u/:id" element={<LinkLogin onSelect={handleSelectUser} />} />
+            <Route path="/*" element={<S0_ProfileSelect onSelect={handleSelectUser} />} />
+          </Routes>
+        </Router>
+      </AppErrorBoundary>
     );
   }
 
   return (
-    <Router>
-      <div className="app-shell" style={{ minHeight: '100vh', background: 'var(--bg)', color: 'white', paddingBottom: '80px' }}>
+    <AppErrorBoundary>
+      <Router>
+        <div className="app-shell" style={{ minHeight: '100vh', background: 'var(--bg)', color: 'white', paddingBottom: '80px' }}>
         <Routes>
           <Route path="/u/:id" element={<LinkLogin onSelect={handleSelectUser} />} />
           <Route path="/" element={<Navigate to="/dashboard" />} />
@@ -140,5 +175,6 @@ export default function App() {
         <BottomNav />
       </div>
     </Router>
+    </AppErrorBoundary>
   );
 }
